@@ -3,7 +3,7 @@ name: springboot-mysql-compose
 
 services:
   app:
-    container_name: khalid-springboot
+    container_name: huyqn-springboot
     build:
       context: .
       dockerfile: ./Dockerfile2
@@ -18,13 +18,13 @@ services:
       - java-app
 
   mysql:
-    container_name: khalid-java-mysql
+    container_name: huyqn-java-mysql
     image: "mysql:8.0"
     environment:
-      MYSQL_ROOT_PASSWORD: password123_DONG
-      MYSQL_DATABASE: db_example
-      MYSQL_USER: khalid
-      MYSQL_PASSWORD: password123_DONG
+      MYSQL_ROOT_PASSWORD: toor
+      MYSQL_DATABASE: mydb
+      MYSQL_USER: huyqn
+      MYSQL_PASSWORD: qnhuy
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:3306"]
       interval: 10s
