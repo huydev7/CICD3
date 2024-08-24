@@ -21,15 +21,6 @@ pipeline {
             }
         }
 
-        stage('Copy SQL Script') {
-            steps {
-                script {
-                    // Sao chép script.sql vào thư mục workspace
-                    sh 'cp path/to/script.sql script/script.sql' // Thay 'path/to/script.sql' bằng đường dẫn thực tế
-                }
-            }
-        }
-
         stage('Packaging/Pushing image') {
             steps {
                 script {
