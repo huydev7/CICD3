@@ -27,16 +27,24 @@ pipeline {
         }
 
         stage('Deploy MySQL to DEV') {
-            steps {
-                echo 'Deploying and cleaning'
-                sh 'docker image pull mysql:8.0'
-                sh 'docker network create dev || echo "this network exists"'
-                sh 'echo y | docker container prune '
-                sh "docker run --name huyqn-mysql --rm --network dev -v huyqn-mysql-data:/var/lib/mysql -e MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_LOGIN_PSW} -e MYSQL_DATABASE=mydb -d mysql:8.0"
-                sh 'timeout /t 20'
-                sh "docker exec -i huyqn-mysql mysql --user=root --password=${MYSQL_ROOT_LOGIN_PSW} < script"
-            }
+    steps {
+        echo 'Deploying and cleaning'
+        sh 'docker image pull mysql:8.0'
+        sh 'docker network create dev || echo "this network exists"'
+        sh 'echo y | docker container prune'
+        
+        // Sử dụng withEnv để truyền mật khẩu một cách an toàn
+        withEnv(["MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_LOGIN_PSW}"]) {
+            sh "docker run --name huyqn-mysql --rm --network dev -v huyqn-mysql-data:/var/lib/mysql -e MYSQL_ROOT_PASSWORD -e MYSQL_DATABASE=mydb -d mysql:8.0"
         }
+
+        // Đợi 20 giây
+        sh "timeout 20 bash -c 'while ! docker exec huyqn-mysql mysqladmin ping -h localhost; do sleep 1; done'"
+        
+        // Thực thi script
+        sh "docker exec -i huyqn-mysql mysql --user=root --password=${MYSQL_ROOT_LOGIN_PSW} < script.sql"
+    }
+}
 
         stage('Deploy Spring Boot to DEV') {
             steps {
