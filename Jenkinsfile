@@ -5,8 +5,8 @@ pipeline {
         maven 'my-maven' 
     }
     environment {
-        MYSQL_ROOT_LOGIN = credentials('mysql-root-login')
-        MYSQL_ROOT_LOGIN_PSW = credentials('mysql-root-password') // Thêm biến môi trường cho mật khẩu root
+        MYSQL_ROOT_LOGIN = credentials('mysql-root-login') // Đảm bảo rằng credential này tồn tại
+        MYSQL_ROOT_LOGIN_PSW = credentials('mysql-root-password') // Đảm bảo rằng credential này tồn tại
     }
     stages {
 
@@ -14,9 +14,11 @@ pipeline {
             steps {
                 script {
                     node {
-                        sh 'mvn --version'
-                        sh 'java -version'
-                        sh 'mvn clean package -Dmaven.test.failure.ignore=true'
+                        dir('path/to/your/maven/project') { // Cập nhật đường dẫn đến thư mục chứa pom.xml
+                            sh 'mvn --version'
+                            sh 'java -version'
+                            sh 'mvn clean package -Dmaven.test.failure.ignore=true'
+                        }
                     }
                 }
             }
@@ -44,7 +46,6 @@ pipeline {
                         sh 'docker network create dev || echo "this network exists"'
                         sh 'echo y | docker container prune'
                         
-                        // Sử dụng với MYSQL_ROOT_LOGIN_PSW để truyền mật khẩu một cách an toàn
                         withEnv(["MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_LOGIN_PSW}"]) {
                             sh """
                                 docker run --name huyqn-mysql --rm --network dev \
