@@ -60,7 +60,7 @@ pipeline {
                     sh '''
                         if [ -f script.sql ]; then
                             echo "Executing script.sql..."
-                            docker exec -i huyqn-mysql mysql --user=root --password=${MYSQL_ROOT_LOGIN_PSW} < script.sql
+                            docker exec -i huyqn-mysql mysql --user=root --password=${MYSQL_ROOT_LOGIN_PSW} < script/script.sql
                         else
                             echo "script.sql not found!"
                             exit 1
