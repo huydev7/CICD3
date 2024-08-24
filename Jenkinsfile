@@ -58,13 +58,15 @@ pipeline {
                     
                     // Thực thi script.sql
                     sh '''
-                        if [ -f script/script.sql ]; then
-                            echo "Executing script.sql..."
-                            docker exec -i huyqn-mysql mysql --user=root --password=${MYSQL_ROOT_LOGIN_PSW} < script/script.sql
-                        else
-                            echo "script.sql not found!"
-                            exit 1
-                        fi
+                        echo "Listing files in script directory:"
+    ls -l script/
+    if [ -f script/script.sql ]; then
+        echo "Executing script.sql..."
+        docker exec -i huyqn-mysql mysql --user=root --password=${MYSQL_ROOT_LOGIN_PSW} < script/script.sql
+    else
+        echo "script.sql not found!"
+        exit 1
+    fi
                     '''
                 }
             }
