@@ -5,29 +5,16 @@ pipeline {
         maven 'my-maven' 
     }
     environment {
-        MYSQL_ROOT_LOGIN = credentials('mysql-root-login') // Đảm bảo rằng credential này tồn tại
-        MYSQL_ROOT_LOGIN_PSW = credentials('mysql-root-password') // Đảm bảo rằng credential này tồn tại
+        MYSQL_ROOT_LOGIN = credentials('mysql-root-login')
+        MYSQL_ROOT_LOGIN_PSW = credentials('mysql-root-password')
     }
     stages {
-
         stage('Build with Maven') {
             steps {
                 script {
-                    // Chạy lệnh Maven từ thư mục gốc
                     sh 'mvn --version'
                     sh 'java -version'
                     sh 'mvn clean package -Dmaven.test.failure.ignore=true'
-                }
-            }
-        }
-
-        stage('Packaging/Pushing image') {
-            steps {
-                script {
-                    withDockerRegistry(credentialsId: 'dockerhub', url: 'https://index.docker.io/v1/') {
-                        sh 'docker build -t huyqn/springboot .'
-                        sh 'docker push huyqn/springboot'
-                    }
                 }
             }
         }
@@ -55,18 +42,15 @@ pipeline {
 
                     // Đợi MySQL khởi động
                     sh "timeout 30 bash -c 'while ! docker exec huyqn-mysql mysqladmin ping -h localhost --silent; do sleep 1; done'"
-                    
-                    // Thực thi script.sql
+
+                    // Thực thi các câu lệnh SQL để tạo user và cấp quyền
                     sh '''
-                        echo "Listing files in script directory:"
-    ls -l script/
-    if [ -f script/script.sql ]; then
-        echo "Executing script.sql..."
-        docker exec -i huyqn-mysql mysql --user=root --password=${MYSQL_ROOT_LOGIN_PSW} < script/script.sql
-    else
-        echo "script.sql not found!"
-        exit 1
-    fi
+                        echo "Creating user and granting privileges..."
+                        docker exec -i huyqn-mysql mysql --user=root --password=${MYSQL_ROOT_LOGIN_PSW} <<EOF
+                        CREATE USER 'huyqn'@'%' IDENTIFIED BY 'qnhuy';
+                        GRANT ALL PRIVILEGES ON mydb.* TO 'huyqn'@'%';
+                        FLUSH PRIVILEGES;
+                        EOF
                     '''
                 }
             }
