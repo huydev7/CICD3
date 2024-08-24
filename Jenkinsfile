@@ -35,11 +35,15 @@ pipeline {
         stage('Deploy MySQL to DEV') {
             steps {
                 script {
-                    echo 'Deploying and cleaning'
+                    echo 'Deploying MySQL container'
                     sh 'docker image pull mysql:8.0'
                     sh 'docker network create dev || echo "this network exists"'
-                    sh 'echo y | docker container prune'
                     
+                    // Dừng và xóa container nếu nó đang chạy
+                    sh 'docker stop huyqn-mysql || echo "Container huyqn-mysql is not running"'
+                    sh 'docker rm huyqn-mysql || echo "Container huyqn-mysql does not exist"'
+                    
+                    // Chạy container MySQL mới
                     withEnv(["MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_LOGIN_PSW}"]) {
                         sh """
                             docker run --name huyqn-mysql --rm --network dev \
