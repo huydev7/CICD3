@@ -13,7 +13,7 @@ pipeline {
         stage('Build with Maven') {
             steps {
                 script {
-                    // Chạy lệnh Maven từ thư mục gốc, không cần dir
+                    // Chạy lệnh Maven từ thư mục gốc
                     sh 'mvn --version'
                     sh 'java -version'
                     sh 'mvn clean package -Dmaven.test.failure.ignore=true'
@@ -56,9 +56,10 @@ pipeline {
                     // Đợi MySQL khởi động
                     sh "timeout 30 bash -c 'while ! docker exec huyqn-mysql mysqladmin ping -h localhost --silent; do sleep 1; done'"
                     
-                    // Thực thi script
+                    // Thực thi script.sql
                     sh '''
                         if [ -f script.sql ]; then
+                            echo "Executing script.sql..."
                             docker exec -i huyqn-mysql mysql --user=root --password=${MYSQL_ROOT_LOGIN_PSW} < script.sql
                         else
                             echo "script.sql not found!"

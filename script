@@ -1,3 +1,4 @@
 CREATE USER 'huyqn'@'%' IDENTIFIED BY 'qnhuy';
 GRANT ALL PRIVILEGES ON mydb.* TO 'huyqn'@'%';
 FLUSH PRIVILEGES;
+
