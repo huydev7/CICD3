@@ -6,6 +6,7 @@ pipeline {
     }
     environment {
         MYSQL_ROOT_LOGIN = credentials('mysql-root-login')
+        MYSQL_ROOT_LOGIN_PSW = credentials('mysql-root-password') // Thêm biến môi trường cho mật khẩu root
     }
     stages {
 
@@ -31,42 +32,38 @@ pipeline {
                 echo 'Deploying and cleaning'
                 sh 'docker image pull mysql:8.0'
                 sh 'docker network create dev || echo "this network exists"'
-
-                // Kiểm tra và xoá container cũ nếu nó tồn tại
-                sh '''
-                    if [ "$(docker ps -aq -f name=huyqn-mysql)" ]; then
-                        echo "Removing existing container huyqn-mysql..."
-                        docker rm -f huyqn-mysql
-                    fi
-                '''
-
-                // Sử dụng withEnv để truyền mật khẩu một cách an toàn
-                withEnv(["MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_LOGIN}"]) {
-                    sh "docker run --name huyqn-mysql --rm --network dev -v huyqn-mysql-data:/var/lib/mysql -e MYSQL_ROOT_PASSWORD -e MYSQL_DATABASE=mydb -d mysql:8.0"
+                sh 'echo y | docker container prune'
+                
+                // Sử dụng với MYSQL_ROOT_LOGIN_PSW để truyền mật khẩu một cách an toàn
+                withEnv(["MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_LOGIN_PSW}"]) {
+                    sh """
+                        docker run --name huyqn-mysql --rm --network dev \
+                        -v huyqn-mysql-data:/var/lib/mysql \
+                        -e MYSQL_ROOT_PASSWORD=\$MYSQL_ROOT_PASSWORD \
+                        -e MYSQL_DATABASE=mydb -d mysql:8.0
+                    """
                 }
 
-                // Đợi cho MySQL khởi động
-                sh "timeout 20 bash -c 'while ! docker exec huyqn-mysql mysqladmin ping -h localhost; do sleep 1; done'"
+                // Đợi MySQL khởi động
+                sh "timeout 30 bash -c 'while ! docker exec huyqn-mysql mysqladmin ping -h localhost --silent; do sleep 1; done'"
                 
                 // Thực thi script
-                sh "docker exec -i huyqn-mysql mysql --user=root --password=${MYSQL_ROOT_LOGIN} < script.sql"
+                sh '''
+                    if [ -f script.sql ]; then
+                        docker exec -i huyqn-mysql mysql --user=root --password=${MYSQL_ROOT_LOGIN_PSW} < script.sql
+                    else
+                        echo "script.sql not found!"
+                        exit 1
+                    fi
+                '''
             }
         }
 
         stage('Deploy Spring Boot to DEV') {
             steps {
-                echo 'Deploying and cleaning'
+                echo 'Deploying Spring Boot application'
                 sh 'docker image pull huyqn/springboot'
-
-                // Kiểm tra và xoá container cũ nếu nó tồn tại
-                sh '''
-                    if [ "$(docker ps -aq -f name=huyqn-springboot)" ]; then
-                        echo "Stopping and removing existing container huyqn-springboot..."
-                        docker stop huyqn-springboot
-                        docker rm huyqn-springboot
-                    fi
-                '''
-
+                sh 'docker container stop huyqn-springboot || echo "this container does not exist" '
                 sh 'docker network create dev || echo "this network exists"'
                 sh 'echo y | docker container prune '
                 sh 'docker container run -d --rm --name huyqn-springboot -p 8081:8080 --network dev huyqn/springboot'
